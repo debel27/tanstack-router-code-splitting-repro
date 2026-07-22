@@ -11,6 +11,7 @@ function RootComponent() {
       <header style={{ display: "flex", gap: "4px" }}>
         <HeaderLink to="/route1">Route 1</HeaderLink>
         <HeaderLink to="/route2">Route 2</HeaderLink>
+        <HeaderLink to="/route3">Route 3</HeaderLink>
       </header>
       <main>
         <Outlet />

@@ -1,17 +1,27 @@
-Reproducing an issue discussed on the Discord channel.
+> Context: [Post in TanStack's Discord channel](https://discord.com/channels/719702312431386674/1529227452025540809).
 
-# Issue description
+This repo provides a minimal reproducing example for the eager behavior behind `autoCodeSplitting: true`.
 
-When I set `autoCodeSplitting: true` in the bundler configuration, `vite build` will produce a lot of JavaScript assets. 
+The sample codebase contains:
 
-Many of those assets contain the implementation of a single React component or hook, such as  `Modal-CkwMSvnd.js` or `useLocalStorage-CNmdzOMP.js`. As a result, there are many generated chunks, most of them being below 1 kB in size.
+- Three routes (`/route1` , `/route2` and `/route3`)
+- Shareable components, located in `src/components`
 
-It appears that Router decides to create a dedicated chunk for every shared module it encounters (i.e. if a component is used in more than one route, it will create a dedicated chunk for it). This split strategy looks too eager for me, as it yields a lot of network requests, much like Vite's development server. Is there a way to make the bundler take a more balanced approach?
+The usage of the components in each route is outlined in the table below.
 
-# About this repo
+| Component/hook | route1.tsx | route2.tsx | route3.tsx | destination chunk    |
+| -------------- | ---------- | ---------- | ---------- | -------------------- |
+| `Icon`         | ✅         | ✅         | ✅         | `Icon-DhPHNrzM.js`   |
+| `Button`       | ✅         | ✅         | ❌         | `Button-CcpGVbb2.js` |
+| `Card`         | ❌         | ✅         | ✅         | `Input-CLRYPAa_.js`  |
+| `Input`        | ❌         | ✅         | ✅         | `Input-CLRYPAa_.js`  |
 
-This repo provides a minimal reproducing example for the stated problem. Both `route1.tsx` and `route2.tsx` use a shared `useOnlineStatus` hook. When running `npm run build`, a dedicated chunk is created for that hook (`dist/assets/useOnlineStatus-Yn8UbVr9.js`).
+As shown, the code splitting strategy seems to generate one chunk per combination of routes that share an import.
 
-While it is legitimate to refactor shared code in a distinct module, my own "real world scenario" yields a lot of small chunks like this one, which seems overkill.
+For instance, if `Button` were to be imported in `route3.tsx`, the "Button" bundle would disappear and the component implementation would move to the "Icon" bundle (which might be renamed to "Button" along the way).
 
-The code split logic is a bit hard to predict for me, and adding more shared components or hooks does not yield additional chunks in this specific example. 
+On the other hand, if `Card` is no longer used in `route3.tsx`, the implementation of `Card` will end up in the bundle specific to `route2.tsx` (not represented in the table above).
+
+In other words, the logic seems to aim for the absolute minimal number of bytes transferred over the wire, for each given route. But this strategy is sensitive to combinatorial explosion, as it can result in a lot of very small chunks when the code requirements of the routes are diverse, which is what I'm experiencing.
+
+To avoid extreme scenarios, it may be useful to tune the bundler to find a better balance between bundle size and the number of HTTP requests needed to load a route.

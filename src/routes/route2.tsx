@@ -1,20 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { Icon } from "../components/Icon";
+import { Input } from "../components/Input";
 
 export const Route = createFileRoute("/route2")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const isOnline = useOnlineStatus();
-
   return (
     <div>
       <h1>Route 2</h1>
-      <div>
-        <div>Status: {isOnline ? "Online" : "Offline"}</div>
-      </div>
+      <Card>
+        <Icon />
+        <Button />
+        <Input />
+      </Card>
     </div>
   );
 }
